@@ -13,48 +13,64 @@ Text Domain:  wpsst-order-columns-plus
 Domain Path:  /languages
 */
 
-// انشاء حقل حقل مخصص في WooCommerce لتخزين عدد مرات مشاهدة المنتج
-function custom_product_views_field()
-{
-    woocommerce_wp_text_input(
-        array(
-            'id' => 'custom_product_views',
-            'class' => 'wc_input_short',
-            'label' => __('Product Views', 'woocommerce'),
-            'type' => 'number',
-            'custom_attributes' => array(
-                'step' => '1',
-                'min' => '0'
-            )
-        )
-    );
-}
-add_action('woocommerce_product_options_general_product_data', 'custom_product_views_field');
+defined('ABSPATH') || exit;
 
-// زيادة عدد مرات مشاهدة المنتج في WooCommerce Product Custom Fields كلما تمت مشاهدة المنتج
-function increase_product_views()
-{
-    if (is_singular('product')) {
-        $product_id = get_queried_object_id();
-        $views = get_post_meta($product_id, 'custom_product_views', true);
-        if (empty($views)) {
-            $views = 0;
+if (!class_exists('WPSST_Display_Product_Views')) {
+    class WPSST_Display_Product_Views
+    {
+
+        /**
+         * Initialize the plugin.
+         */
+        public function __construct()
+        {
+            add_filter('woocommerce_get_stock_html', array($this, 'display_product_views'), 10, 2);
+            add_action('wp', array($this, 'increase_product_views'));
         }
-        $views++;
-        update_post_meta($product_id, 'custom_product_views', $views);
+
+        /**
+         * Get product views count.
+         */
+        private function get_product_views($product_id)
+        {
+            $product_views = get_post_meta($product_id, '_product_views', true);
+            if (empty($product_views)) {
+                $product_views = 0;
+            }
+            return $product_views;
+        }
+
+        /**
+         * Update product views count.
+         */
+        private function update_product_views($product_id)
+        {
+            $product_views = $this->get_product_views($product_id);
+            $product_views++;
+            update_post_meta($product_id, '_product_views', $product_views);
+        }
+
+        /**
+         * Display product views count.
+         */
+        public function display_product_views($html, $product)
+        {
+            $product_views = $this->get_product_views($product->get_id());
+            return '<div class="product-views">' . __('عدد مشاهدات المنتج:', 'wpsst') . ' ' . $product_views . '</div>' . $html;
+        }
+
+        /**
+         * Increase product views count.
+         */
+        public function increase_product_views()
+        {
+            if (is_singular('product')) {
+                global $post;
+                $this->update_product_views($post->ID);
+            }
+        }
+
     }
 }
-add_action('wp', 'increase_product_views');
 
-// عرض عدد مرات مشاهدة المنتج داخل صفحة المنتج في WooCommerce
-function display_product_views()
-{
-    global $product;
-    $views = get_post_meta($product->get_id(), 'custom_product_views', true);
-    echo '<div class="product-views">';
-    echo __('Product Views:', 'woocommerce') . ' ' . $views;
-    echo '</div>';
-}
-add_action('woocommerce_single_product_summary', 'display_product_views', 11);
-
-?>
+new WPSST_Display_Product_Views();
