@@ -1,9 +1,10 @@
 .wd-visits-count {
+    background-color: #F0F0F0;
+    border-radius: 10px;
     display: inline-block;
-    padding: 5px 15px;
-    background-color: #4CAF50;
-    color: #fff;
     font-size: 16px;
     font-weight: bold;
-    border-radius: 20px;
-}
+    margin-right: 10px;
+    padding: 5px 10px;
+  }
+  
