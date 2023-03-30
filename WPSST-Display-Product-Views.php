@@ -4,7 +4,7 @@
 Plugin Name:  WPSST Display Product Views
 Plugin URI:   https://www.syriasmart.net
 Description:  Add more columns on admin oreder page. 
-Version:      1.0
+Version:      1.1
 Author:       Syria Smart Technology 
 Author URI:   https://www.syriasmart.net
 License:      GPL v2 or later
@@ -31,9 +31,12 @@ if (!class_exists('WPSST_Display_Product_Views')) {
         /**
          * Get product views count.
          */
-        private function get_product_views($product_id)
+        private function get_product_views($product_id, $variation_id = 0)
         {
             $product_views = get_post_meta($product_id, '_product_views', true);
+            if ($variation_id) {
+                $product_views = get_post_meta($variation_id, '_product_views', true);
+            }
             if (empty($product_views)) {
                 $product_views = 0;
             }
@@ -43,11 +46,15 @@ if (!class_exists('WPSST_Display_Product_Views')) {
         /**
          * Update product views count.
          */
-        private function update_product_views($product_id)
+        private function update_product_views($product_id, $variation_id = 0)
         {
-            $product_views = $this->get_product_views($product_id);
+            $product_views = $this->get_product_views($product_id, $variation_id);
             $product_views++;
-            update_post_meta($product_id, '_product_views', $product_views);
+            if ($variation_id) {
+                update_post_meta($variation_id, '_product_views', $product_views);
+            } else {
+                update_post_meta($product_id, '_product_views', $product_views);
+            }
         }
 
         /**
@@ -66,7 +73,15 @@ if (!class_exists('WPSST_Display_Product_Views')) {
         {
             if (is_singular('product')) {
                 global $post;
-                $this->update_product_views($post->ID);
+                $product = wc_get_product($post->ID);
+                if ($product->is_type('variable')) {
+                    $variations = $product->get_available_variations();
+                    foreach ($variations as $variation) {
+                        $this->update_product_views($post->ID, $variation['variation_id']);
+                    }
+                } else {
+                    $this->update_product_views($post->ID);
+                }
             }
         }
 
